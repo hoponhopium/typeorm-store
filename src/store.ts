@@ -78,7 +78,7 @@ export class Store {
      */
     upsert<E extends Entity>(entity: E): Promise<void>
     upsert<E extends Entity>(entities: E[]): Promise<void>
-    async upsert<E extends Entity>(e: E | E[]): Promise<void> {
+    async upsert<E extends Entity>(e: E | E[], primaryKeys?: string[]): Promise<void> {
         if (Array.isArray(e)) {
             if (e.length == 0) return
             let entityClass = e[0].constructor as EntityClass<E>
@@ -86,20 +86,20 @@ export class Store {
                 assert(entityClass === e[i].constructor, 'mass saving allowed only for entities of the same class')
             }
             await this.changes?.trackUpsert(entityClass, e)
-            await this.saveMany(entityClass, e)
+            await this.saveMany(entityClass, e, primaryKeys)
         } else {
             let entityClass = e.constructor as EntityClass<E>
             await this.changes?.trackUpsert(entityClass, [e])
-            await this.em().upsert(entityClass, e as any, ['id', 'timestamp'])
+            await this.em().upsert(entityClass, e as any, primaryKeys ?? ['id'])
         }
     }
 
-    private async saveMany(entityClass: EntityClass<any>, entities: any[]): Promise<void> {
+    private async saveMany(entityClass: EntityClass<any>, entities: any[], primaryKeys?: string[]): Promise<void> {
         assert(entities.length > 0)
         let em = this.em()
         let metadata = em.connection.getMetadata(entityClass)
         let fk = metadata.columns.filter(c => c.relationMetadata)
-        if (fk.length == 0) return this.upsertMany(em, entityClass, entities)
+        if (fk.length == 0) return this.upsertMany(em, entityClass, entities, primaryKeys)
         let currentSignature = this.getFkSignature(fk, entities[0])
         let batch = []
         for (let e of entities) {
@@ -107,13 +107,13 @@ export class Store {
             if (sig === currentSignature) {
                 batch.push(e)
             } else {
-                await this.upsertMany(em, entityClass, batch)
+                await this.upsertMany(em, entityClass, batch, primaryKeys)
                 currentSignature = sig
                 batch = [e]
             }
         }
         if (batch.length) {
-            await this.upsertMany(em, entityClass, batch)
+            await this.upsertMany(em, entityClass, batch, primaryKeys)
         }
     }
 
@@ -126,9 +126,9 @@ export class Store {
         return sig
     }
 
-    private async upsertMany(em: EntityManager, entityClass: EntityClass<any>, entities: any[]): Promise<void> {
+    private async upsertMany(em: EntityManager, entityClass: EntityClass<any>, entities: any[], primaryKeys?: string[]): Promise<void> {
         for (let b of splitIntoBatches(entities, 1000)) {
-            await em.upsert(entityClass, b as any, ['id', 'timestamp'])
+            await em.upsert(entityClass, b as any, primaryKeys ?? ['id'])
         }
     }
 

@@ -57,8 +57,8 @@ export declare class Store {
      *
      * It always executes a primitive operation without cascades, relations, etc.
      */
-    upsert<E extends Entity>(entity: E): Promise<void>;
-    upsert<E extends Entity>(entities: E[]): Promise<void>;
+    upsert<E extends Entity>(entity: E, primaryKeys?: string[]): Promise<void>;
+    upsert<E extends Entity>(entities: E[], primaryKeys?: string[]): Promise<void>;
     private saveMany;
     private getFkSignature;
     private upsertMany;

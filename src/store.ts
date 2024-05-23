@@ -76,8 +76,8 @@ export class Store {
      *
      * It always executes a primitive operation without cascades, relations, etc.
      */
-    upsert<E extends Entity>(entity: E): Promise<void>
-    upsert<E extends Entity>(entities: E[]): Promise<void>
+    upsert<E extends Entity>(entity: E, primaryKeys?: string[]): Promise<void>
+    upsert<E extends Entity>(entities: E[], primaryKeys?: string[]): Promise<void>
     async upsert<E extends Entity>(e: E | E[], primaryKeys?: string[]): Promise<void> {
         if (Array.isArray(e)) {
             if (e.length == 0) return

@@ -1,10 +1,10 @@
-import {createOrmConfig} from '@subsquid/typeorm-config'
-import {assertNotNull, last, maybeLast} from '@subsquid/util-internal'
+import { assertNotNull, last, maybeLast } from '@subsquid/util-internal'
 import assert from 'assert'
-import {DataSource, EntityManager} from 'typeorm'
-import {ChangeTracker, rollbackBlock} from './hot'
-import {DatabaseState, FinalTxInfo, HashAndHeight, HotTxInfo} from './interfaces'
-import {Store} from './store'
+import { DataSource, EntityManager } from 'typeorm'
+import { ChangeTracker, rollbackBlock } from './hot'
+import { DatabaseState, FinalTxInfo, HashAndHeight, HotTxInfo } from './interfaces'
+import { Store } from './store'
+import { DbConnectionParams, createOrmConfig } from './config'
 
 
 export type IsolationLevel = 'SERIALIZABLE' | 'READ COMMITTED' | 'REPEATABLE READ'
@@ -15,6 +15,7 @@ export interface TypeormDatabaseOptions {
     isolationLevel?: IsolationLevel
     stateSchema?: string
     projectDir?: string
+    connectionParams?: DbConnectionParams
 }
 
 
@@ -23,6 +24,7 @@ export class TypeormDatabase {
     private isolationLevel: IsolationLevel
     private con?: DataSource
     private projectDir: string
+    private connectionParams: DbConnectionParams
 
     public readonly supportsHotBlocks: boolean
 
@@ -31,20 +33,21 @@ export class TypeormDatabase {
         this.isolationLevel = options?.isolationLevel || 'SERIALIZABLE'
         this.supportsHotBlocks = options?.supportHotBlocks !== false
         this.projectDir = options?.projectDir || process.cwd()
+        this.connectionParams = options?.connectionParams || { host: 'localhost', port: 5432, database: 'postgres', username: 'postgres', password: 'password' }
     }
 
     async connect(): Promise<DatabaseState> {
         assert(this.con == null, 'already connected')
 
-        let cfg = createOrmConfig({projectDir: this.projectDir})
+        let cfg = createOrmConfig({ projectDir: this.projectDir, connectionParams: this.connectionParams })
         this.con = new DataSource(cfg)
 
         await this.con.initialize()
 
         try {
             return await this.con.transaction('SERIALIZABLE', em => this.initTransaction(em))
-        } catch(e: any) {
-            await this.con.destroy().catch(() => {}) // ignore error
+        } catch (e: any) {
+            await this.con.destroy().catch(() => { }) // ignore error
             this.con = undefined
             throw e
         }
@@ -65,7 +68,7 @@ export class TypeormDatabase {
             `id int4 primary key, ` +
             `height int4 not null, ` +
             `hash text DEFAULT '0x', ` +
-            `nonce int4 DEFAULT 0`+
+            `nonce int4 DEFAULT 0` +
             `)`
         )
         await em.query( // for databases created by prev version of typeorm store
@@ -86,25 +89,25 @@ export class TypeormDatabase {
             `)`
         )
 
-        let status: (HashAndHeight & {nonce: number})[] = await em.query(
+        let status: (HashAndHeight & { nonce: number })[] = await em.query(
             `SELECT height, hash, nonce FROM ${schema}.status WHERE id = 0`
         )
         if (status.length == 0) {
             await em.query(`INSERT INTO ${schema}.status (id, height, hash) VALUES (0, -1, '0x')`)
-            status.push({height: -1, hash: '0x', nonce: 0})
+            status.push({ height: -1, hash: '0x', nonce: 0 })
         }
 
         let top: HashAndHeight[] = await em.query(
             `SELECT height, hash FROM ${schema}.hot_block ORDER BY height`
         )
 
-        return assertStateInvariants({...status[0], top})
+        return assertStateInvariants({ ...status[0], top })
     }
 
     private async getState(em: EntityManager): Promise<DatabaseState> {
         let schema = this.escapedSchema()
 
-        let status: (HashAndHeight & {nonce: number})[] = await em.query(
+        let status: (HashAndHeight & { nonce: number })[] = await em.query(
             `SELECT height, hash, nonce FROM ${schema}.status WHERE id = 0`
         )
 
@@ -114,13 +117,13 @@ export class TypeormDatabase {
             `SELECT hash, height FROM ${schema}.hot_block ORDER BY height`
         )
 
-        return assertStateInvariants({...status[0], top})
+        return assertStateInvariants({ ...status[0], top })
     }
 
     transact(info: FinalTxInfo, cb: (store: Store) => Promise<void>): Promise<void> {
         return this.submit(async em => {
             let state = await this.getState(em)
-            let {prevHead: prev, nextHead: next} = info
+            let { prevHead: prev, nextHead: next } = info
 
             assert(state.hash === info.prevHead.hash, RACE_MSG)
             assert(state.height === prev.height)
@@ -256,7 +259,7 @@ export class TypeormDatabase {
                 let con = this.con
                 assert(con != null, 'not connected')
                 return await con.transaction(this.isolationLevel, tx)
-            } catch(e: any) {
+            } catch (e: any) {
                 if (e.code == '40001' && retries) {
                     retries -= 1
                 } else {

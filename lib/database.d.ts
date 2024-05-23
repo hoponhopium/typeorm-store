@@ -1,17 +1,20 @@
 import { DatabaseState, FinalTxInfo, HashAndHeight, HotTxInfo } from './interfaces';
 import { Store } from './store';
+import { DbConnectionParams } from './config';
 export type IsolationLevel = 'SERIALIZABLE' | 'READ COMMITTED' | 'REPEATABLE READ';
 export interface TypeormDatabaseOptions {
     supportHotBlocks?: boolean;
     isolationLevel?: IsolationLevel;
     stateSchema?: string;
     projectDir?: string;
+    connectionParams?: DbConnectionParams;
 }
 export declare class TypeormDatabase {
     private statusSchema;
     private isolationLevel;
     private con?;
     private projectDir;
+    private connectionParams;
     readonly supportsHotBlocks: boolean;
     constructor(options?: TypeormDatabaseOptions);
     connect(): Promise<DatabaseState>;

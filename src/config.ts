@@ -17,13 +17,12 @@ const log = createLogger('sqd:typeorm-config')
 
 export interface OrmOptions {
     projectDir?: string
-    connectionParams: DbConnectionParams
 }
 
 export const MIGRATIONS_DIR = 'db/migrations'
 
 
-export function createOrmConfig(options?: OrmOptions): OrmConfig {
+export function createOrmConfig(options?: OrmOptions, connectionParams: DbConnectionParams): OrmConfig {
     let dir = path.resolve(options?.projectDir || process.cwd())
     let model = resolveModel(dir)
     let migrationsDir = path.join(dir, MIGRATIONS_DIR)
@@ -37,7 +36,7 @@ export function createOrmConfig(options?: OrmOptions): OrmConfig {
         type: 'postgres',
         namingStrategy: new SnakeNamingStrategy(),
         ...locations,
-        ...options.connectionParams
+        ...connectionParams
     }
 }
 

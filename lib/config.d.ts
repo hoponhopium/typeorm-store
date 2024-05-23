@@ -8,8 +8,7 @@ export interface DbConnectionParams {
 }
 export interface OrmOptions {
     projectDir?: string;
-    connectionParams: DbConnectionParams;
 }
 export declare const MIGRATIONS_DIR = "db/migrations";
-export declare function createOrmConfig(options?: OrmOptions): OrmConfig;
+export declare function createOrmConfig(options?: OrmOptions, connectionParams: DbConnectionParams): OrmConfig;
 //# sourceMappingURL=config.d.ts.map

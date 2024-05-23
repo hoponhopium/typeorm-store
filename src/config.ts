@@ -22,7 +22,7 @@ export interface OrmOptions {
 export const MIGRATIONS_DIR = 'db/migrations'
 
 
-export function createOrmConfig(options?: OrmOptions, connectionParams: DbConnectionParams): OrmConfig {
+export function createOrmConfig(connectionParams: DbConnectionParams, options?: OrmOptions): OrmConfig {
     let dir = path.resolve(options?.projectDir || process.cwd())
     let model = resolveModel(dir)
     let migrationsDir = path.join(dir, MIGRATIONS_DIR)

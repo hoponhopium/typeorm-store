@@ -39,7 +39,7 @@ export class TypeormDatabase {
     async connect(): Promise<DatabaseState> {
         assert(this.con == null, 'already connected')
 
-        let cfg = createOrmConfig({ projectDir: this.projectDir }, this.connectionParams)
+        let cfg = createOrmConfig(this.connectionParams, { projectDir: this.projectDir })
         this.con = new DataSource(cfg)
 
         await this.con.initialize()

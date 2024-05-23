@@ -1,12 +1,12 @@
 import assert from 'assert'
-import {EntityManager, FindOptionsOrder, FindOptionsRelations, FindOptionsWhere} from 'typeorm'
-import {EntityTarget} from 'typeorm/common/EntityTarget'
-import {ColumnMetadata} from 'typeorm/metadata/ColumnMetadata'
-import {ChangeTracker} from './hot'
+import { EntityManager, FindOptionsOrder, FindOptionsRelations, FindOptionsWhere } from 'typeorm'
+import { EntityTarget } from 'typeorm/common/EntityTarget'
+import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata'
+import { ChangeTracker } from './hot'
 
 
 export interface EntityClass<T> {
-    new (): T
+    new(): T
 }
 
 
@@ -56,7 +56,7 @@ export interface FindManyOptions<Entity = any> extends FindOneOptions<Entity> {
  * Restricted version of TypeORM entity manager for squid data handlers.
  */
 export class Store {
-    constructor(private em: () => EntityManager, private changes?: ChangeTracker) {}
+    constructor(private em: () => EntityManager, private changes?: ChangeTracker) { }
 
     /**
      * Alias for {@link Store.upsert}
@@ -90,7 +90,7 @@ export class Store {
         } else {
             let entityClass = e.constructor as EntityClass<E>
             await this.changes?.trackUpsert(entityClass, [e])
-            await this.em().upsert(entityClass, e as any, ['id'])
+            await this.em().upsert(entityClass, e as any, ['id', 'timestamp'])
         }
     }
 
@@ -128,7 +128,7 @@ export class Store {
 
     private async upsertMany(em: EntityManager, entityClass: EntityClass<any>, entities: any[]): Promise<void> {
         for (let b of splitIntoBatches(entities, 1000)) {
-            await em.upsert(entityClass, b as any, ['id'])
+            await em.upsert(entityClass, b as any, ['id', 'timestamp'])
         }
     }
 
@@ -166,7 +166,7 @@ export class Store {
     remove<E extends Entity>(entity: E): Promise<void>
     remove<E extends Entity>(entities: E[]): Promise<void>
     remove<E extends Entity>(entityClass: EntityClass<E>, id: string | string[]): Promise<void>
-    async remove<E extends Entity>(e: E | E[] | EntityClass<E>, id?: string | string[]): Promise<void>{
+    async remove<E extends Entity>(e: E | E[] | EntityClass<E>, id?: string | string[]): Promise<void> {
         if (id == null) {
             if (Array.isArray(e)) {
                 if (e.length == 0) return
@@ -224,7 +224,7 @@ export class Store {
 
     get<E extends Entity>(entityClass: EntityClass<E>, optionsOrId: FindOneOptions<E> | string): Promise<E | undefined> {
         if (typeof optionsOrId == 'string') {
-            return this.findOneBy(entityClass, {id: optionsOrId} as any)
+            return this.findOneBy(entityClass, { id: optionsOrId } as any)
         } else {
             return this.findOne(entityClass, optionsOrId)
         }

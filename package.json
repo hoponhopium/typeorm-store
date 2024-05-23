@@ -1,9 +1,9 @@
 {
-  "name": "@subsquid/typeorm-store",
-  "version": "1.5.1",
+  "name": "@hoponhopium/typeorm-store",
+  "version": "1.0.2",
   "description": "TypeORM based storage for squid mappings",
   "license": "GPL-3.0-or-later",
-  "repository": "git@github.com:subsquid/squid.git",
+  "repository": "git@github.com:hoponhopium/typeorm-store.git",
   "publishConfig": {
     "access": "public"
   },
